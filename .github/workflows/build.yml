@@ -8,12 +8,13 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: 1. Clonar Cheat Engine 7.5 y submódulos
+    - name: 1. Clonar Cheat Engine 7.5 y submódulos (Clonación Completa)
       uses: actions/checkout@v4
       with:
         repository: cheat-engine/cheat-engine
         ref: '7.5'        # Usamos la etiqueta de una versión estable
-        submodules: true  # 'true' es la forma correcta de clonar submódulos
+        submodules: true  # Asegura que los submódulos se procesen
+        fetch-depth: 0    # ESTO ES LO NUEVO: Realiza una clonación completa (no superficial)
 
     - name: 2. Instalar Lazarus IDE y Cross-Compiler para 32-bit
       shell: powershell
