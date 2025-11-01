@@ -1,36 +1,108 @@
-name: Build Cheat Engine (GUI only)
+name: Compilar Cheat Engine (Versión Completa) para Windows
 
 on:
-  workflow_dispatch:
-  push:
-    branches: [ main ]
+  workflow_dispatch: # Permite la ejecución manual
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Clonar el repositorio de Cheat Engine
+      uses: actions/checkout@v4
+      with:
+        repository: cheat-engine/cheat-engine
+        submodules: 'recursive'
 
-      - name: Download Lazarus 2.2.2
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri "https://downloads.sourceforge.net/project/lazarus/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-win64.exe" -OutFile "lazarus.exe"
-          Start-Process -Wait -FilePath "lazarus.exe" -ArgumentList "/VERYSILENT","/NORESTART"
-          if (-not (Test-Path "C:\lazarus\lazbuild.exe")) {
-            Write-Error "Lazarus no se instaló correctamente."
-            exit 1
-          }
+    - name: Configurar MSBuild (Visual Studio)
+      uses: microsoft/setup-msbuild@v1.3
 
-      - name: Compile Cheat Engine GUI
-        shell: pwsh
-        run: |
-          cd "Cheat Engine"
-          & "C:\lazarus\lazbuild.exe" "Cheat Engine.lpi" --build-mode=Release
+    - name: Instalar Lazarus IDE y Cross-Compiler
+      shell: powershell
+      run: |
+        echo "Descargando Lazarus IDE (64-bit)..."
+        Invoke-WebRequest -Uri "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-win64.exe/download" -OutFile "lazarus_installer.exe"
+        
+        echo "Descargando Lazarus Cross-Compiler (i386-win32)..."
+        Invoke-WebRequest -Uri "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-cross-i386-win32-win64.exe/download" -OutFile "lazarus_cross_compiler_installer.exe"
 
-      - name: Upload executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: CheatEngine-GUI
-          path: Cheat Engine/bin/
+        echo "Instalando Lazarus IDE silenciosamente..."
+        Start-Process -FilePath ".\lazarus_installer.exe" -ArgumentList "/VERYSILENT /NORESTART /DIR=C:\lazarus" -Wait
+        
+        echo "Instalando Lazarus Cross-Compiler silenciosamente..."
+        Start-Process -FilePath ".\lazarus_cross_compiler_installer.exe" -ArgumentList "/VERYSILENT /NORESTART /DIR=C:\lazarus" -Wait
+
+        echo "Agregando Lazarus al PATH..."
+        echo "C:\lazarus" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+    - name: Compilar proyectos de Lazarus (.lpi, .lpr)
+      shell: cmd
+      run: |
+        echo "Compilando Cheat Engine (64-bit y 32-bit)..."
+        lazbuild "Cheat Engine\cheatengine.lpi"
+        lazbuild "Cheat Engine\cheatengine.lpi" --cpu=i386 --os=win32
+
+        echo "Compilando speedhack (64-bit y 32-bit)..."
+        lazbuild "Cheat Engine\speedhack\speedhack.lpr"
+        lazbuild "Cheat Engine\speedhack\speedhack.lpr" --cpu=i386 --os=win32
+
+        echo "Compilando luaclient (64-bit y 32-bit)..."
+        lazbuild "Cheat Engine\luaclient\luaclient.lpr"
+        lazbuild "Cheat Engine\luaclient\luaclient.lpr" --cpu=i386 --os=win32
+
+        echo "Compilando vehdebug (64-bit y 32-bit)..."
+        lazbuild "Cheat Engine\vehdebug\vehdebug.lpr"
+        lazbuild "Cheat Engine\vehdebug\vehdebug.lpr" --cpu=i386 --os=win32
+
+    - name: Compilar proyectos de Visual Studio (.sln)
+      shell: cmd
+      run: |
+        echo "Compilando proyectos de MSBuild..."
+        rem DirectX Mess (32 y 64 bits)
+        msbuild "Cheat Engine\DirectXMess\DirectXMess.sln" /p:Configuration=Release /p:Platform=x64
+        msbuild "Cheat Engine\DirectXMess\DirectXMess.sln" /p:Configuration=Release /p:Platform=Win32
+
+        rem DotNet Data Collector (32 y 64 bits)
+        msbuild "Cheat Engine\DotNetDataCollector\dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=x64
+        msbuild "Cheat Engine\DotNetDataCollector\dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=x86
+
+        rem Mono Data Collector (32 y 64 bits)
+        msbuild "Cheat Engine\MonoDataCollector\MonoDataCollector.sln" /p:Configuration=Release /p:Platform=x64
+        msbuild "Cheat Engine\MonoDataCollector\MonoDataCollector.sln" /p:Configuration=Release /p:Platform=x86
+
+        rem Java Support (32 y 64 bits)
+        msbuild "Cheat Engine\cejavahook\cejvmti.sln" /p:Configuration=Release /p:Platform=x64
+        msbuild "Cheat Engine\cejavahook\cejvmti.sln" /p:Configuration=Release /p:Platform=Win32
+
+        rem Kernel Driver (DBKKernel) - Versión sin firma
+        rem Nota: Este driver no estará firmado. Para usarlo, necesitarás deshabilitar la comprobación de firmas de drivers en Windows.
+        msbuild "Cheat Engine\dbk\DBKKernel.sln" /p:Configuration="Release No-Sig" /p:Platform=x64
+        
+        rem Tiny C Compiler (TCC)
+        msbuild "Cheat Engine\tcclib\tcclib.sln" /p:Configuration=Release /p:Platform=x64
+        msbuild "Cheat Engine\tcclib\tcclib.sln" /p:Configuration=Release /p:Platform=Win32
+
+    - name: Preparar y subir artefacto de compilación
+      uses: actions/upload-artifact@v4
+      with:
+        name: CheatEngine-Windows-Completo
+        path: |
+          Cheat Engine/bin/
+          Cheat Engine/bin64/
+          Cheat Engine/luaclient/luaclient.dll
+          Cheat Engine/luaclient/luaclient-i386.dll
+          Cheat Engine/speedhack/speedhack-x86_64.dll
+          Cheat Engine/speedhack/speedhack-i386.dll
+          Cheat Engine/vehdebug/vehdebug-x86_64.dll
+          Cheat Engine/vehdebug/vehdebug-i386.dll
+          Cheat Engine/DirectXMess/x64/Release/d3dhook.dll
+          Cheat Engine/DirectXMess/Release/d3dhook.dll
+          Cheat Engine/DotNetDataCollector/bin/x64/Release/*.dll
+          Cheat Engine/DotNetDataCollector/bin/x86/Release/*.dll
+          Cheat Engine/MonoDataCollector/bin/x64/Release/*.dll
+          Cheat Engine/MonoDataCollector/bin/x86/Release/*.dll
+          Cheat Engine/cejavahook/x64/Release/*.dll
+          Cheat Engine/cejavahook/Release/*.dll
+          Cheat Engine/dbk/x64/Release No-Sig/dbk64.sys
+          Cheat Engine/tcclib/x64/Release/tcclib.dll
+          Cheat Engine/tcclib/Win32/Release/tcclib.dll
