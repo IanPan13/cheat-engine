@@ -1,4 +1,4 @@
-name: Compilar Cheat Engine (Versión Parcial Funcional)
+name: Compilar Cheat Engine 7.5 (Versión Completa y Estable)
 
 on:
   workflow_dispatch:
@@ -8,25 +8,26 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: 1. Clonar repositorio y submódulos (Mejor esfuerzo)
-      run: git clone --recursive https://github.com/cheat-engine/cheat-engine.git
+    - name: 1. Clonar Cheat Engine 7.5 y submódulos
+      uses: actions/checkout@v4
+      with:
+        repository: cheat-engine/cheat-engine
+        ref: '7.5'        # Usamos la etiqueta de una versión estable
+        submodules: true  # 'true' es suficiente y claro para inicializar submódulos
 
-    - name: 2. Configurar MSBuild (Visual Studio)
+    - name: 2. Configurar Lazarus IDE 2.2.2
+      uses: gcarreno/setup-lazarus@v3.2.15
+      with:
+        lazarus-version: "2.2.2"
+
+    - name: 3. Configurar MSBuild (Visual Studio)
       uses: microsoft/setup-msbuild@v1.3
 
-    - name: 3. Instalar Lazarus IDE y Cross-Compiler
-      shell: powershell
-      run: |
-        curl.exe -L -o lazarus_installer.exe "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-win64.exe/download"
-        curl.exe -L -o lazarus_cross_compiler_installer.exe "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-cross-i386-win32-win64.exe/download"
-        Start-Process -FilePath ".\lazarus_installer.exe" -ArgumentList "/VERYSILENT /NORESTART /DIR=C:\lazarus" -Wait
-        Start-Process -FilePath ".\lazarus_cross_compiler_installer.exe" -ArgumentList "/VERYSILENT /NORESTART /DIR=C:\lazarus" -Wait
-        echo "C:\lazarus" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-    - name: 4. Compilar proyectos de Lazarus
+    - name: 4. Compilar proyectos de Lazarus (32 y 64 bits)
       shell: cmd
-      working-directory: 'cheat-engine\Cheat Engine'
+      working-directory: 'Cheat Engine'
       run: |
+        echo "Compilando componentes de Lazarus..."
         lazbuild cheatengine.lpi
         lazbuild cheatengine.lpi --cpu=i386 --os=win32
         lazbuild speedhack/speedhack.lpr
@@ -36,55 +37,34 @@ jobs:
         lazbuild vehdebug/vehdebug.lpr
         lazbuild vehdebug/vehdebug.lpr --cpu=i386 --os=win32
 
-    - name: 5. Compilar proyectos de Visual Studio (Componentes Disponibles)
+    - name: 5. Compilar proyectos de Visual Studio (32 y 64 bits)
       shell: powershell
-      working-directory: '.\cheat-engine\Cheat Engine'
+      working-directory: '.\Cheat Engine'
       run: |
+        echo "Compilando componentes de Visual Studio..."
         $common_args = "/p:Configuration=Release", "/p:WindowsTargetPlatformVersion=10.0", "/p:PlatformToolset=v143"
         
-        Write-Host "Compilando DotNetDataCollector (si existe)..."
-        if (Test-Path "DotNetDataCollector\dotnetdatacollector.sln") {
-            msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" $common_args "/p:Platform=x64"
-            msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" $common_args "/p:Platform=Win32"
-        }
-
-        Write-Host "Compilando MonoDataCollector (si existe)..."
-        if (Test-Path "MonoDataCollector\MonoDataCollector.sln") {
-            msbuild.exe "MonoDataCollector\MonoDataCollector.sln" $common_args "/p:Platform=x64"
-            msbuild.exe "MonoDataCollector\MonoDataCollector.sln" $common_args "/p:Platform=Win32"
-        }
+        msbuild.exe "DirectXMess\DirectXMess.sln" $common_args "/p:Platform=x64"
+        msbuild.exe "DirectXMess\DirectXMess.sln" $common_args "/p:Platform=Win32"
         
-        # ==============================================================================
-        # Los siguientes submódulos no se están clonando. Se omiten para permitir
-        # que la compilación finalice.
-        # ==============================================================================
-        # Write-Host "Compilando DirectXMess (si existe)..."
-        # if (Test-Path "DirectXMess\DirectXMess.sln") {
-        #     msbuild.exe "DirectXMess\DirectXMess.sln" $common_args "/p:Platform=x64"
-        #     msbuild.exe "DirectXMess\DirectXMess.sln" $common_args "/p:Platform=Win32"
-        # }
-        #
-        # Write-Host "Compilando Java Support (si existe)..."
-        # if (Test-Path "cejavahook\cejvmti.sln") {
-        #     msbuild.exe "cejavahook\cejvmti.sln" $common_args "/p:Platform=x64"
-        #     msbuild.exe "cejavahook\cejvmti.sln" $common_args "/p:Platform=Win32"
-        # }
-        #
-        # Write-Host "Compilando Kernel Driver (si existe)..."
-        # if (Test-Path "dbk\DBKKernel.sln") {
-        #     msbuild.exe "dbk\DBKKernel.sln" $common_args "/p:Platform=x64" "/p:Configuration=Release No-Sig"
-        # }
-        #
-        # Write-Host "Compilando Tiny C Compiler (si existe)..."
-        # if (Test-Path "tcclib\tcclib.sln") {
-        #     msbuild.exe "tcclib\tcclib.sln" $common_args "/p:Platform=x64"
-        #     msbuild.exe "tcclib\tcclib.sln" $common_args "/p:Platform=Win32"
-        # }
+        msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" $common_args "/p:Platform=x64"
+        msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" $common_args "/p:Platform=Win32"
+        
+        msbuild.exe "MonoDataCollector\MonoDataCollector.sln" $common_args "/p:Platform=x64"
+        msbuild.exe "MonoDataCollector\MonoDataCollector.sln" $common_args "/p:Platform=Win32"
+        
+        msbuild.exe "cejavahook\cejvmti.sln" $common_args "/p:Platform=x64"
+        msbuild.exe "cejavahook\cejvmti.sln" $common_args "/p:Platform=Win32"
+        
+        msbuild.exe "dbk\DBKKernel.sln" $common_args "/p:Platform=x64" "/p:Configuration=Release No-Sig"
+        
+        msbuild.exe "tcclib\tcclib.sln" $common_args "/p:Platform=x64"
+        msbuild.exe "tcclib\tcclib.sln" $common_args "/p:Platform=Win32"
 
-    - name: 6. Preparar y subir artefacto de compilación
+    - name: 6. Empaquetar y subir artefacto de compilación
       uses: actions/upload-artifact@v4
       with:
-        name: CheatEngine-Windows-Parcial
+        name: CheatEngine-7.5-Windows-Completo
         path: |
-          cheat-engine/Cheat Engine/bin/
-          cheat-engine/Cheat Engine/bin64/
+          Cheat Engine/bin/
+          Cheat Engine/bin64/
