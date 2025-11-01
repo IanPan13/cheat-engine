@@ -17,14 +17,17 @@ jobs:
     - name: Configurar MSBuild (Visual Studio)
       uses: microsoft/setup-msbuild@v1.3
 
+    # ==================== BLOQUE CORREGIDO ====================
     - name: Instalar Lazarus IDE y Cross-Compiler
       shell: powershell
       run: |
-        echo "Descargando Lazarus IDE (64-bit)..."
-        Invoke-WebRequest -Uri "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-win64.exe/download" -OutFile "lazarus_installer.exe"
+        echo "Descargando Lazarus IDE (64-bit) usando curl..."
+        $lazarus_url = "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-win64.exe/download"
+        curl.exe -L -o lazarus_installer.exe $lazarus_url
         
-        echo "Descargando Lazarus Cross-Compiler (i386-win32)..."
-        Invoke-WebRequest -Uri "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-cross-i386-win32-win64.exe/download" -OutFile "lazarus_cross_compiler_installer.exe"
+        echo "Descargando Lazarus Cross-Compiler (i386-win32) usando curl..."
+        $cross_compiler_url = "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-cross-i386-win32-win64.exe/download"
+        curl.exe -L -o lazarus_cross_compiler_installer.exe $cross_compiler_url
 
         echo "Instalando Lazarus IDE silenciosamente..."
         Start-Process -FilePath ".\lazarus_installer.exe" -ArgumentList "/VERYSILENT /NORESTART /DIR=C:\lazarus" -Wait
@@ -34,6 +37,7 @@ jobs:
 
         echo "Agregando Lazarus al PATH..."
         echo "C:\lazarus" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    # ========================================================
 
     - name: Compilar proyectos de Lazarus (.lpi, .lpr)
       shell: cmd
@@ -75,7 +79,6 @@ jobs:
         msbuild "Cheat Engine\cejavahook\cejvmti.sln" /p:Configuration=Release /p:Platform=Win32
 
         rem Kernel Driver (DBKKernel) - Versión sin firma
-        rem Nota: Este driver no estará firmado. Para usarlo, necesitarás deshabilitar la comprobación de firmas de drivers en Windows.
         msbuild "Cheat Engine\dbk\DBKKernel.sln" /p:Configuration="Release No-Sig" /p:Platform=x64
         
         rem Tiny C Compiler (TCC)
@@ -89,12 +92,9 @@ jobs:
         path: |
           Cheat Engine/bin/
           Cheat Engine/bin64/
-          Cheat Engine/luaclient/luaclient.dll
-          Cheat Engine/luaclient/luaclient-i386.dll
-          Cheat Engine/speedhack/speedhack-x86_64.dll
-          Cheat Engine/speedhack/speedhack-i386.dll
-          Cheat Engine/vehdebug/vehdebug-x86_64.dll
-          Cheat Engine/vehdebug/vehdebug-i386.dll
+          Cheat Engine/luaclient/*.dll
+          Cheat Engine/speedhack/*.dll
+          Cheat Engine/vehdebug/*.dll
           Cheat Engine/DirectXMess/x64/Release/d3dhook.dll
           Cheat Engine/DirectXMess/Release/d3dhook.dll
           Cheat Engine/DotNetDataCollector/bin/x64/Release/*.dll
