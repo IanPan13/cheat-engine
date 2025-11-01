@@ -1,37 +1,44 @@
-name: Build Cheat Engine
+name: Compilar Cheat Engine para Windows
 
 on:
-  workflow_dispatch:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Clonar el repositorio de Cheat Engine
+      uses: actions/checkout@v3
+      with:
+        repository: cheat-engine/cheat-engine
+        submodules: 'recursive'
 
-      - name: Install Lazarus (Free Pascal)
-        shell: pwsh
-        run: |
-          choco install lazarus -y
+    - name: Instalar Lazarus IDE
+      shell: powershell
+      run: |
+        echo "Descargando Lazarus IDE..."
+        Invoke-WebRequest -Uri "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-win64.exe/download" -OutFile "lazarus_installer.exe"
+        echo "Instalando Lazarus IDE silenciosamente..."
+        Start-Process -FilePath ".\lazarus_installer.exe" -ArgumentList "/VERYSILENT /NORESTART /DIR=C:\lazarus" -Wait
+        echo "Lazarus IDE instalado en C:\lazarus"
+        echo "Agregando Lazarus al PATH..."
+        echo "C:\lazarus" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: Find and compile with lazbuild
-        shell: pwsh
-        run: |
-          $laz = Get-ChildItem "C:\" -Recurse -Filter lazbuild.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $laz) {
-            Write-Error "No se encontró lazbuild.exe en el sistema."
-            exit 1
-          }
-          Write-Host "Encontrado lazbuild en: $($laz.FullName)"
-          cd "Cheat Engine"
-          & $laz.FullName "Cheat Engine.lpi"
+    - name: Compilar Cheat Engine
+      shell: cmd
+      run: |
+        echo "Compilando Cheat Engine..."
+        lazbuild --build-all "Cheat Engine/cheatengine.lpi"
 
-      - name: Upload compiled executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: CheatEngine-Build
-          path: Cheat Engine/bin/
+    - name: Subir artefacto de compilación
+      uses: actions/upload-artifact@v3
+      with:
+        name: CheatEngine-Windows
+        path: |
+          Cheat Engine/bin/
+          Cheat Engine/bin64/
