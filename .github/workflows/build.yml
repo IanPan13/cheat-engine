@@ -61,28 +61,30 @@ jobs:
       run: |
         echo "Compilando proyectos de MSBuild..."
 
+        rem ==================== CAMBIO CLAVE: Usar barras invertidas \ para las rutas ====================
+        
         rem DirectX Mess (32 y 64 bits)
-        msbuild "DirectXMess/DirectXMess.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild "DirectXMess/DirectXMess.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "DirectXMess\DirectXMess.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "DirectXMess\DirectXMess.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
         rem DotNet Data Collector (32 y 64 bits)
-        msbuild "DotNetDataCollector/dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild "DotNetDataCollector/dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "DotNetDataCollector\dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "DotNetDataCollector\dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
         rem Mono Data Collector (32 y 64 bits)
-        msbuild "MonoDataCollector/MonoDataCollector.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild "MonoDataCollector/MonoDataCollector.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "MonoDataCollector\MonoDataCollector.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "MonoDataCollector\MonoDataCollector.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
         rem Java Support (32 y 64 bits)
-        msbuild "cejavahook/cejvmti.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild "cejavahook/cejvmti.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "cejavahook\cejvmti.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "cejavahook\cejvmti.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
         rem Kernel Driver (DBKKernel) - Versión sin firma
-        msbuild "dbk/DBKKernel.sln" /p:Configuration="Release No-Sig" /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "dbk\DBKKernel.sln" /p:Configuration="Release No-Sig" /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
         
         rem Tiny C Compiler (TCC)
-        msbuild "tcclib/tcclib.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild "tcclib/tcclib.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "tcclib\tcclib.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "tcclib\tcclib.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
     - name: Preparar y subir artefacto de compilación
       uses: actions/upload-artifact@v4
