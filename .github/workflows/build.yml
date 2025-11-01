@@ -1,7 +1,7 @@
 name: Compilar Cheat Engine (Versión Completa) para Windows
 
 on:
-  workflow_dispatch: # Permite la ejecución manual
+  workflow_dispatch:
 
 jobs:
   build-windows:
@@ -17,17 +17,14 @@ jobs:
     - name: Configurar MSBuild (Visual Studio)
       uses: microsoft/setup-msbuild@v1.3
 
-    # ==================== BLOQUE CORREGIDO ====================
     - name: Instalar Lazarus IDE y Cross-Compiler
       shell: powershell
       run: |
         echo "Descargando Lazarus IDE (64-bit) usando curl..."
-        $lazarus_url = "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-win64.exe/download"
-        curl.exe -L -o lazarus_installer.exe $lazarus_url
+        curl.exe -L -o lazarus_installer.exe "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-win64.exe/download"
         
         echo "Descargando Lazarus Cross-Compiler (i386-win32) usando curl..."
-        $cross_compiler_url = "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-cross-i386-win32-win64.exe/download"
-        curl.exe -L -o lazarus_cross_compiler_installer.exe $cross_compiler_url
+        curl.exe -L -o lazarus_cross_compiler_installer.exe "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-cross-i386-win32-win64.exe/download"
 
         echo "Instalando Lazarus IDE silenciosamente..."
         Start-Process -FilePath ".\lazarus_installer.exe" -ArgumentList "/VERYSILENT /NORESTART /DIR=C:\lazarus" -Wait
@@ -37,53 +34,56 @@ jobs:
 
         echo "Agregando Lazarus al PATH..."
         echo "C:\lazarus" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-    # ========================================================
 
     - name: Compilar proyectos de Lazarus (.lpi, .lpr)
       shell: cmd
+      working-directory: 'Cheat Engine' # Se establece un directorio de trabajo para simplificar las rutas
       run: |
         echo "Compilando Cheat Engine (64-bit y 32-bit)..."
-        lazbuild "Cheat Engine\cheatengine.lpi"
-        lazbuild "Cheat Engine\cheatengine.lpi" --cpu=i386 --os=win32
+        lazbuild cheatengine.lpi
+        lazbuild cheatengine.lpi --cpu=i386 --os=win32
 
         echo "Compilando speedhack (64-bit y 32-bit)..."
-        lazbuild "Cheat Engine\speedhack\speedhack.lpr"
-        lazbuild "Cheat Engine\speedhack\speedhack.lpr" --cpu=i386 --os=win32
+        lazbuild speedhack\speedhack.lpr
+        lazbuild speedhack\speedhack.lpr --cpu=i386 --os=win32
 
         echo "Compilando luaclient (64-bit y 32-bit)..."
-        lazbuild "Cheat Engine\luaclient\luaclient.lpr"
-        lazbuild "Cheat Engine\luaclient\luaclient.lpr" --cpu=i386 --os=win32
+        lazbuild luaclient\luaclient.lpr
+        lazbuild luaclient\luaclient.lpr --cpu=i386 --os=win32
 
         echo "Compilando vehdebug (64-bit y 32-bit)..."
-        lazbuild "Cheat Engine\vehdebug\vehdebug.lpr"
-        lazbuild "Cheat Engine\vehdebug\vehdebug.lpr" --cpu=i386 --os=win32
+        lazbuild vehdebug\vehdebug.lpr
+        lazbuild vehdebug\vehdebug.lpr --cpu=i386 --os=win32
 
     - name: Compilar proyectos de Visual Studio (.sln)
       shell: cmd
+      working-directory: 'Cheat Engine' # Se establece un directorio de trabajo para simplificar las rutas
       run: |
         echo "Compilando proyectos de MSBuild..."
+        set COMMON_FLAGS=/p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+
         rem DirectX Mess (32 y 64 bits)
-        msbuild "Cheat Engine\DirectXMess\DirectXMess.sln" /p:Configuration=Release /p:Platform=x64
-        msbuild "Cheat Engine\DirectXMess\DirectXMess.sln" /p:Configuration=Release /p:Platform=Win32
+        msbuild DirectXMess\DirectXMess.sln /p:Configuration=Release /p:Platform=x64 %COMMON_FLAGS%
+        msbuild DirectXMess\DirectXMess.sln /p:Configuration=Release /p:Platform=Win32 %COMMON_FLAGS%
 
         rem DotNet Data Collector (32 y 64 bits)
-        msbuild "Cheat Engine\DotNetDataCollector\dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=x64
-        msbuild "Cheat Engine\DotNetDataCollector\dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=x86
+        msbuild DotNetDataCollector\dotnetdatacollector.sln /p:Configuration=Release /p:Platform=x64 %COMMON_FLAGS%
+        msbuild DotNetDataCollector\dotnetdatacollector.sln /p:Configuration=Release /p:Platform=Win32 %COMMON_FLAGS%
 
         rem Mono Data Collector (32 y 64 bits)
-        msbuild "Cheat Engine\MonoDataCollector\MonoDataCollector.sln" /p:Configuration=Release /p:Platform=x64
-        msbuild "Cheat Engine\MonoDataCollector\MonoDataCollector.sln" /p:Configuration=Release /p:Platform=x86
+        msbuild MonoDataCollector\MonoDataCollector.sln /p:Configuration=Release /p:Platform=x64 %COMMON_FLAGS%
+        msbuild MonoDataCollector\MonoDataCollector.sln /p:Configuration=Release /p:Platform=Win32 %COMMON_FLAGS%
 
         rem Java Support (32 y 64 bits)
-        msbuild "Cheat Engine\cejavahook\cejvmti.sln" /p:Configuration=Release /p:Platform=x64
-        msbuild "Cheat Engine\cejavahook\cejvmti.sln" /p:Configuration=Release /p:Platform=Win32
+        msbuild cejavahook\cejvmti.sln /p:Configuration=Release /p:Platform=x64 %COMMON_FLAGS%
+        msbuild cejavahook\cejvmti.sln /p:Configuration=Release /p:Platform=Win32 %COMMON_FLAGS%
 
         rem Kernel Driver (DBKKernel) - Versión sin firma
-        msbuild "Cheat Engine\dbk\DBKKernel.sln" /p:Configuration="Release No-Sig" /p:Platform=x64
+        msbuild dbk\DBKKernel.sln /p:Configuration="Release No-Sig" /p:Platform=x64 %COMMON_FLAGS%
         
         rem Tiny C Compiler (TCC)
-        msbuild "Cheat Engine\tcclib\tcclib.sln" /p:Configuration=Release /p:Platform=x64
-        msbuild "Cheat Engine\tcclib\tcclib.sln" /p:Configuration=Release /p:Platform=Win32
+        msbuild tcclib\tcclib.sln /p:Configuration=Release /p:Platform=x64 %COMMON_FLAGS%
+        msbuild tcclib\tcclib.sln /p:Configuration=Release /p:Platform=Win32 %COMMON_FLAGS%
 
     - name: Preparar y subir artefacto de compilación
       uses: actions/upload-artifact@v4
@@ -98,9 +98,9 @@ jobs:
           Cheat Engine/DirectXMess/x64/Release/d3dhook.dll
           Cheat Engine/DirectXMess/Release/d3dhook.dll
           Cheat Engine/DotNetDataCollector/bin/x64/Release/*.dll
-          Cheat Engine/DotNetDataCollector/bin/x86/Release/*.dll
+          Cheat Engine/DotNetDataCollector/bin/Win32/Release/*.dll
           Cheat Engine/MonoDataCollector/bin/x64/Release/*.dll
-          Cheat Engine/MonoDataCollector/bin/x86/Release/*.dll
+          Cheat Engine/MonoDataCollector/bin/Win32/Release/*.dll
           Cheat Engine/cejavahook/x64/Release/*.dll
           Cheat Engine/cejavahook/Release/*.dll
           Cheat Engine/dbk/x64/Release No-Sig/dbk64.sys
