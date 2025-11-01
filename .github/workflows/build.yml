@@ -37,53 +37,52 @@ jobs:
 
     - name: Compilar proyectos de Lazarus (.lpi, .lpr)
       shell: cmd
-      working-directory: 'Cheat Engine' # Se establece un directorio de trabajo para simplificar las rutas
+      working-directory: 'Cheat Engine'
       run: |
         echo "Compilando Cheat Engine (64-bit y 32-bit)..."
         lazbuild cheatengine.lpi
         lazbuild cheatengine.lpi --cpu=i386 --os=win32
 
         echo "Compilando speedhack (64-bit y 32-bit)..."
-        lazbuild speedhack\speedhack.lpr
-        lazbuild speedhack\speedhack.lpr --cpu=i386 --os=win32
+        lazbuild speedhack/speedhack.lpr
+        lazbuild speedhack/speedhack.lpr --cpu=i386 --os=win32
 
         echo "Compilando luaclient (64-bit y 32-bit)..."
-        lazbuild luaclient\luaclient.lpr
-        lazbuild luaclient\luaclient.lpr --cpu=i386 --os=win32
+        lazbuild luaclient/luaclient.lpr
+        lazbuild luaclient/luaclient.lpr --cpu=i386 --os=win32
 
         echo "Compilando vehdebug (64-bit y 32-bit)..."
-        lazbuild vehdebug\vehdebug.lpr
-        lazbuild vehdebug\vehdebug.lpr --cpu=i386 --os=win32
+        lazbuild vehdebug/vehdebug.lpr
+        lazbuild vehdebug/vehdebug.lpr --cpu=i386 --os=win32
 
     - name: Compilar proyectos de Visual Studio (.sln)
       shell: cmd
-      working-directory: 'Cheat Engine' # Se establece un directorio de trabajo para simplificar las rutas
+      working-directory: 'Cheat Engine'
       run: |
         echo "Compilando proyectos de MSBuild..."
-        set COMMON_FLAGS=/p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
         rem DirectX Mess (32 y 64 bits)
-        msbuild DirectXMess\DirectXMess.sln /p:Configuration=Release /p:Platform=x64 %COMMON_FLAGS%
-        msbuild DirectXMess\DirectXMess.sln /p:Configuration=Release /p:Platform=Win32 %COMMON_FLAGS%
+        msbuild "DirectXMess/DirectXMess.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "DirectXMess/DirectXMess.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
         rem DotNet Data Collector (32 y 64 bits)
-        msbuild DotNetDataCollector\dotnetdatacollector.sln /p:Configuration=Release /p:Platform=x64 %COMMON_FLAGS%
-        msbuild DotNetDataCollector\dotnetdatacollector.sln /p:Configuration=Release /p:Platform=Win32 %COMMON_FLAGS%
+        msbuild "DotNetDataCollector/dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "DotNetDataCollector/dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
         rem Mono Data Collector (32 y 64 bits)
-        msbuild MonoDataCollector\MonoDataCollector.sln /p:Configuration=Release /p:Platform=x64 %COMMON_FLAGS%
-        msbuild MonoDataCollector\MonoDataCollector.sln /p:Configuration=Release /p:Platform=Win32 %COMMON_FLAGS%
+        msbuild "MonoDataCollector/MonoDataCollector.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "MonoDataCollector/MonoDataCollector.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
         rem Java Support (32 y 64 bits)
-        msbuild cejavahook\cejvmti.sln /p:Configuration=Release /p:Platform=x64 %COMMON_FLAGS%
-        msbuild cejavahook\cejvmti.sln /p:Configuration=Release /p:Platform=Win32 %COMMON_FLAGS%
+        msbuild "cejavahook/cejvmti.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "cejavahook/cejvmti.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
         rem Kernel Driver (DBKKernel) - Versión sin firma
-        msbuild dbk\DBKKernel.sln /p:Configuration="Release No-Sig" /p:Platform=x64 %COMMON_FLAGS%
+        msbuild "dbk/DBKKernel.sln" /p:Configuration="Release No-Sig" /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
         
         rem Tiny C Compiler (TCC)
-        msbuild tcclib\tcclib.sln /p:Configuration=Release /p:Platform=x64 %COMMON_FLAGS%
-        msbuild tcclib\tcclib.sln /p:Configuration=Release /p:Platform=Win32 %COMMON_FLAGS%
+        msbuild "tcclib/tcclib.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild "tcclib/tcclib.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
     - name: Preparar y subir artefacto de compilación
       uses: actions/upload-artifact@v4
@@ -92,17 +91,3 @@ jobs:
         path: |
           Cheat Engine/bin/
           Cheat Engine/bin64/
-          Cheat Engine/luaclient/*.dll
-          Cheat Engine/speedhack/*.dll
-          Cheat Engine/vehdebug/*.dll
-          Cheat Engine/DirectXMess/x64/Release/d3dhook.dll
-          Cheat Engine/DirectXMess/Release/d3dhook.dll
-          Cheat Engine/DotNetDataCollector/bin/x64/Release/*.dll
-          Cheat Engine/DotNetDataCollector/bin/Win32/Release/*.dll
-          Cheat Engine/MonoDataCollector/bin/x64/Release/*.dll
-          Cheat Engine/MonoDataCollector/bin/Win32/Release/*.dll
-          Cheat Engine/cejavahook/x64/Release/*.dll
-          Cheat Engine/cejavahook/Release/*.dll
-          Cheat Engine/dbk/x64/Release No-Sig/dbk64.sys
-          Cheat Engine/tcclib/x64/Release/tcclib.dll
-          Cheat Engine/tcclib/Win32/Release/tcclib.dll
