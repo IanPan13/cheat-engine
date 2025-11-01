@@ -18,11 +18,17 @@ jobs:
         run: |
           choco install lazarus -y
 
-      - name: Compile Cheat Engine
+      - name: Find and compile with lazbuild
         shell: pwsh
         run: |
+          $laz = Get-ChildItem "C:\" -Recurse -Filter lazbuild.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $laz) {
+            Write-Error "No se encontró lazbuild.exe en el sistema."
+            exit 1
+          }
+          Write-Host "Encontrado lazbuild en: $($laz.FullName)"
           cd "Cheat Engine"
-          & "C:\Program Files\Lazarus\lazbuild.exe" "Cheat Engine.lpi"
+          & $laz.FullName "Cheat Engine.lpi"
 
       - name: Upload compiled executable
         uses: actions/upload-artifact@v4
