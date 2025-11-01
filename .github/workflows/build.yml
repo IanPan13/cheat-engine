@@ -3,7 +3,7 @@ name: Build Cheat Engine
 on:
   workflow_dispatch:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   build:
@@ -22,7 +22,7 @@ jobs:
         shell: pwsh
         run: |
           cd "Cheat Engine"
-          lazbuild "Cheat Engine.lpi"
+          & "C:\Program Files\Lazarus\lazbuild.exe" "Cheat Engine.lpi"
 
       - name: Upload compiled executable
         uses: actions/upload-artifact@v4
