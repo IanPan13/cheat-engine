@@ -8,11 +8,11 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Clonar el repositorio de Cheat Engine
+    - name: Clonar el repositorio y los submódulos
       uses: actions/checkout@v4
       with:
         repository: cheat-engine/cheat-engine
-        submodules: 'recursive'
+        submodules: recursive # Esta es la forma correcta y crucial de clonar los submódulos
 
     - name: Configurar MSBuild (Visual Studio)
       uses: microsoft/setup-msbuild@v1.3
@@ -41,48 +41,27 @@ jobs:
 
     - name: Compilar proyectos de Visual Studio
       shell: powershell
+      working-directory: '.\Cheat Engine'
       run: |
-        # Cambiamos al directorio correcto
-        Set-Location -Path (Join-Path $env:GITHUB_WORKSPACE "Cheat Engine")
-        Write-Host "Directorio de trabajo actual: $((Get-Location).Path)"
+        echo "Compilando proyectos de MSBuild..."
+        $common_args = "/p:Configuration=Release", "/p:WindowsTargetPlatformVersion=10.0", "/p:PlatformToolset=v143"
 
-        # Argumentos comunes
-        $common_args = "/p:WindowsTargetPlatformVersion=10.0", "/p:PlatformToolset=v143"
-
-        # Función de ayuda para compilar y verificar
-        function Build-Solution {
-            param($sln_path, $platform, $extra_args)
-            Write-Host "----------------------------------------------------"
-            Write-Host "Compilando: $sln_path para Plataforma: $platform"
-            $exists = Test-Path $sln_path
-            Write-Host "Verificando si el archivo existe: $exists"
-            if (-not $exists) {
-                throw "¡ERROR! El archivo de solución '$sln_path' no se encontró."
-            }
-            # Usamos /t:build para ser explícitos
-            msbuild.exe $sln_path /t:build /p:Configuration=Release "/p:Platform=$platform" $common_args $extra_args
-        }
-
-        # Compilar cada componente
-        Build-Solution -sln_path "DirectXMess\DirectXMess.sln" -platform "x64"
-        Build-Solution -sln_path "DirectXMess\DirectXMess.sln" -platform "Win32"
+        msbuild.exe "DirectXMess\DirectXMess.sln" $common_args "/p:Platform=x64"
+        msbuild.exe "DirectXMess\DirectXMess.sln" $common_args "/p:Platform=Win32"
         
-        Build-Solution -sln_path "DotNetDataCollector\dotnetdatacollector.sln" -platform "x64"
-        Build-Solution -sln_path "DotNetDataCollector\dotnetdatacollector.sln" -platform "Win32"
+        msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" $common_args "/p:Platform=x64"
+        msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" $common_args "/p:Platform=Win32"
         
-        Build-Solution -sln_path "MonoDataCollector\MonoDataCollector.sln" -platform "x64"
-        Build-Solution -sln_path "MonoDataCollector\MonoDataCollector.sln" -platform "Win32"
+        msbuild.exe "MonoDataCollector\MonoDataCollector.sln" $common_args "/p:Platform=x64"
+        msbuild.exe "MonoDataCollector\MonoDataCollector.sln" $common_args "/p:Platform=Win32"
         
-        Build-Solution -sln_path "cejavahook\cejvmti.sln" -platform "x64"
-        Build-Solution -sln_path "cejavahook\cejvmti.sln" -platform "Win32"
+        msbuild.exe "cejavahook\cejvmti.sln" $common_args "/p:Platform=x64"
+        msbuild.exe "cejavahook\cejvmti.sln" $common_args "/p:Platform=Win32"
         
-        Build-Solution -sln_path "dbk\DBKKernel.sln" -platform "x64" -extra_args "/p:Configuration=Release No-Sig"
+        msbuild.exe "dbk\DBKKernel.sln" $common_args "/p:Platform=x64" "/p:Configuration=Release No-Sig"
         
-        Build-Solution -sln_path "tcclib\tcclib.sln" -platform "x64"
-        Build-Solution -sln_path "tcclib\tcclib.sln" -platform "Win32"
-        
-        Write-Host "----------------------------------------------------"
-        Write-Host "Compilación de proyectos de Visual Studio finalizada."
+        msbuild.exe "tcclib\tcclib.sln" $common_args "/p:Platform=x64"
+        msbuild.exe "tcclib\tcclib.sln" $common_args "/p:Platform=Win32"
 
     - name: Preparar y subir artefacto de compilación
       uses: actions/upload-artifact@v4
