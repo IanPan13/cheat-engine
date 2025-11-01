@@ -8,16 +8,28 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Clonar el repositorio y los submódulos
+    - name: 1. Clonar el repositorio principal
       uses: actions/checkout@v4
       with:
         repository: cheat-engine/cheat-engine
-        submodules: recursive # Esta es la forma correcta y crucial de clonar los submódulos
 
-    - name: Configurar MSBuild (Visual Studio)
-      uses: microsoft/setup-msbuild@v1.3
+    - name: 2. Forzar la inicialización y actualización de submódulos
+      shell: cmd
+      run: git submodule update --init --recursive
 
-    - name: Instalar Lazarus IDE y Cross-Compiler
+    - name: 3. (Depuración) Verificar la existencia de los archivos de proyecto
+      shell: powershell
+      run: |
+        Write-Host "Verificando contenido del directorio de trabajo..."
+        Get-ChildItem -Path . -Recurse -Depth 3 | Select-Object FullName
+        $filePath = ".\Cheat Engine\DirectXMess\DirectXMess.sln"
+        $exists = Test-Path $filePath
+        if (-not $exists) {
+          throw "FATAL: El archivo '$filePath' sigue sin existir después de la actualización de submódulos."
+        }
+        Write-Host "ÉXITO: El archivo '$filePath' fue encontrado."
+
+    - name: 4. Instalar Lazarus IDE y Cross-Compiler
       shell: powershell
       run: |
         curl.exe -L -o lazarus_installer.exe "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-win64.exe/download"
@@ -26,7 +38,7 @@ jobs:
         Start-Process -FilePath ".\lazarus_cross_compiler_installer.exe" -ArgumentList "/VERYSILENT /NORESTART /DIR=C:\lazarus" -Wait
         echo "C:\lazarus" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-    - name: Compilar proyectos de Lazarus
+    - name: 5. Compilar proyectos de Lazarus
       shell: cmd
       working-directory: 'Cheat Engine'
       run: |
@@ -39,11 +51,10 @@ jobs:
         lazbuild vehdebug/vehdebug.lpr
         lazbuild vehdebug/vehdebug.lpr --cpu=i386 --os=win32
 
-    - name: Compilar proyectos de Visual Studio
+    - name: 6. Compilar proyectos de Visual Studio
       shell: powershell
       working-directory: '.\Cheat Engine'
       run: |
-        echo "Compilando proyectos de MSBuild..."
         $common_args = "/p:Configuration=Release", "/p:WindowsTargetPlatformVersion=10.0", "/p:PlatformToolset=v143"
 
         msbuild.exe "DirectXMess\DirectXMess.sln" $common_args "/p:Platform=x64"
@@ -63,7 +74,7 @@ jobs:
         msbuild.exe "tcclib\tcclib.sln" $common_args "/p:Platform=x64"
         msbuild.exe "tcclib\tcclib.sln" $common_args "/p:Platform=Win32"
 
-    - name: Preparar y subir artefacto de compilación
+    - name: 7. Preparar y subir artefacto de compilación
       uses: actions/upload-artifact@v4
       with:
         name: CheatEngine-Windows-Completo
