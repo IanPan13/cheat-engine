@@ -13,12 +13,25 @@ jobs:
       with:
         repository: cheat-engine/cheat-engine
         ref: '7.5'        # Usamos la etiqueta de una versión estable
-        submodules: true  # 'true' es suficiente y claro para inicializar submódulos
+        submodules: true  # 'true' es la forma correcta de clonar submódulos
 
-    - name: 2. Configurar Lazarus IDE 2.2.2
-      uses: gcarreno/setup-lazarus@v3.2.15
-      with:
-        lazarus-version: "2.2.2"
+    - name: 2. Instalar Lazarus IDE y Cross-Compiler para 32-bit
+      shell: powershell
+      run: |
+        echo "Descargando Lazarus IDE (64-bit)..."
+        curl.exe -L -o lazarus_installer.exe "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-win64.exe/download"
+        
+        echo "Descargando Lazarus Cross-Compiler (i386-win32)..."
+        curl.exe -L -o lazarus_cross_compiler_installer.exe "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-cross-i386-win32-win64.exe/download"
+
+        echo "Instalando Lazarus IDE silenciosamente..."
+        Start-Process -FilePath ".\lazarus_installer.exe" -ArgumentList "/VERYSILENT /NORESTART /DIR=C:\lazarus" -Wait
+        
+        echo "Instalando Lazarus Cross-Compiler silenciosamente..."
+        Start-Process -FilePath ".\lazarus_cross_compiler_installer.exe" -ArgumentList "/VERYSILENT /NORESTART /DIR=C:\lazarus" -Wait
+
+        echo "Agregando Lazarus al PATH..."
+        echo "C:\lazarus" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: 3. Configurar MSBuild (Visual Studio)
       uses: microsoft/setup-msbuild@v1.3
