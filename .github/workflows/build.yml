@@ -39,53 +39,50 @@ jobs:
         lazbuild vehdebug/vehdebug.lpr
         lazbuild vehdebug/vehdebug.lpr --cpu=i386 --os=win32
 
-    - name: Depuración - Listar archivos de proyecto
+    - name: Compilar proyectos de Visual Studio
       shell: powershell
-      working-directory: '.\Cheat Engine'
       run: |
-        echo "Verificando la existencia de los archivos .sln..."
-        Get-ChildItem -Path . -Filter *.sln -Recurse | Select-Object FullName
+        # Cambiamos al directorio correcto
+        Set-Location -Path (Join-Path $env:GITHUB_WORKSPACE "Cheat Engine")
+        Write-Host "Directorio de trabajo actual: $((Get-Location).Path)"
 
-    - name: Compilar DirectXMess
-      shell: powershell
-      working-directory: '.\Cheat Engine'
-      run: |
-        msbuild.exe "DirectXMess\DirectXMess.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild.exe "DirectXMess\DirectXMess.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        # Argumentos comunes
+        $common_args = "/p:WindowsTargetPlatformVersion=10.0", "/p:PlatformToolset=v143"
 
-    - name: Compilar DotNetDataCollector
-      shell: powershell
-      working-directory: '.\Cheat Engine'
-      run: |
-        msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        # Función de ayuda para compilar y verificar
+        function Build-Solution {
+            param($sln_path, $platform, $extra_args)
+            Write-Host "----------------------------------------------------"
+            Write-Host "Compilando: $sln_path para Plataforma: $platform"
+            $exists = Test-Path $sln_path
+            Write-Host "Verificando si el archivo existe: $exists"
+            if (-not $exists) {
+                throw "¡ERROR! El archivo de solución '$sln_path' no se encontró."
+            }
+            # Usamos /t:build para ser explícitos
+            msbuild.exe $sln_path /t:build /p:Configuration=Release "/p:Platform=$platform" $common_args $extra_args
+        }
 
-    - name: Compilar MonoDataCollector
-      shell: powershell
-      working-directory: '.\Cheat Engine'
-      run: |
-        msbuild.exe "MonoDataCollector\MonoDataCollector.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild.exe "MonoDataCollector\MonoDataCollector.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-
-    - name: Compilar Java Support (cejvmti)
-      shell: powershell
-      working-directory: '.\Cheat Engine'
-      run: |
-        msbuild.exe "cejavahook\cejvmti.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild.exe "cejavahook\cejvmti.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-
-    - name: Compilar Kernel Driver (DBKKernel)
-      shell: powershell
-      working-directory: '.\Cheat Engine'
-      run: |
-        msbuild.exe "dbk\DBKKernel.sln" /p:Configuration="Release No-Sig" /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-
-    - name: Compilar Tiny C Compiler (tcclib)
-      shell: powershell
-      working-directory: '.\Cheat Engine'
-      run: |
-        msbuild.exe "tcclib\tcclib.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild.exe "tcclib\tcclib.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        # Compilar cada componente
+        Build-Solution -sln_path "DirectXMess\DirectXMess.sln" -platform "x64"
+        Build-Solution -sln_path "DirectXMess\DirectXMess.sln" -platform "Win32"
+        
+        Build-Solution -sln_path "DotNetDataCollector\dotnetdatacollector.sln" -platform "x64"
+        Build-Solution -sln_path "DotNetDataCollector\dotnetdatacollector.sln" -platform "Win32"
+        
+        Build-Solution -sln_path "MonoDataCollector\MonoDataCollector.sln" -platform "x64"
+        Build-Solution -sln_path "MonoDataCollector\MonoDataCollector.sln" -platform "Win32"
+        
+        Build-Solution -sln_path "cejavahook\cejvmti.sln" -platform "x64"
+        Build-Solution -sln_path "cejavahook\cejvmti.sln" -platform "Win32"
+        
+        Build-Solution -sln_path "dbk\DBKKernel.sln" -platform "x64" -extra_args "/p:Configuration=Release No-Sig"
+        
+        Build-Solution -sln_path "tcclib\tcclib.sln" -platform "x64"
+        Build-Solution -sln_path "tcclib\tcclib.sln" -platform "Win32"
+        
+        Write-Host "----------------------------------------------------"
+        Write-Host "Compilación de proyectos de Visual Studio finalizada."
 
     - name: Preparar y subir artefacto de compilación
       uses: actions/upload-artifact@v4
