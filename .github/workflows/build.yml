@@ -56,35 +56,40 @@ jobs:
         lazbuild vehdebug/vehdebug.lpr --cpu=i386 --os=win32
 
     - name: Compilar proyectos de Visual Studio (.sln)
-      shell: cmd
-      working-directory: 'Cheat Engine'
+      shell: powershell
+      working-directory: '.\Cheat Engine' # En PowerShell, es buena práctica usar '.\'
       run: |
-        echo "Compilando proyectos de MSBuild..."
-
-        rem ==================== CAMBIO CLAVE: Usar barras invertidas \ para las rutas ====================
+        echo "Compilando proyectos de MSBuild con PowerShell..."
         
-        rem DirectX Mess (32 y 64 bits)
-        msbuild "DirectXMess\DirectXMess.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild "DirectXMess\DirectXMess.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        # Argumentos comunes para la mayoría de los proyectos
+        $msbuild_args = @(
+            "/p:Configuration=Release",
+            "/p:WindowsTargetPlatformVersion=10.0",
+            "/p:PlatformToolset=v143"
+        )
 
-        rem DotNet Data Collector (32 y 64 bits)
-        msbuild "DotNetDataCollector\dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild "DotNetDataCollector\dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        # DirectX Mess (32 y 64 bits)
+        msbuild.exe "DirectXMess\DirectXMess.sln" $msbuild_args "/p:Platform=x64"
+        msbuild.exe "DirectXMess\DirectXMess.sln" $msbuild_args "/p:Platform=Win32"
 
-        rem Mono Data Collector (32 y 64 bits)
-        msbuild "MonoDataCollector\MonoDataCollector.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild "MonoDataCollector\MonoDataCollector.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        # DotNet Data Collector (32 y 64 bits)
+        msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" $msbuild_args "/p:Platform=x64"
+        msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" $msbuild_args "/p:Platform=Win32"
 
-        rem Java Support (32 y 64 bits)
-        msbuild "cejavahook\cejvmti.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild "cejavahook\cejvmti.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        # Mono Data Collector (32 y 64 bits)
+        msbuild.exe "MonoDataCollector\MonoDataCollector.sln" $msbuild_args "/p:Platform=x64"
+        msbuild.exe "MonoDataCollector\MonoDataCollector.sln" $msbuild_args "/p:Platform=Win32"
 
-        rem Kernel Driver (DBKKernel) - Versión sin firma
-        msbuild "dbk\DBKKernel.sln" /p:Configuration="Release No-Sig" /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        # Java Support (32 y 64 bits)
+        msbuild.exe "cejavahook\cejvmti.sln" $msbuild_args "/p:Platform=x64"
+        msbuild.exe "cejavahook\cejvmti.sln" $msbuild_args "/p:Platform=Win32"
+
+        # Kernel Driver (DBKKernel) - Versión sin firma
+        msbuild.exe "dbk\DBKKernel.sln" $msbuild_args "/p:Platform=x64" "/p:Configuration=Release No-Sig"
         
-        rem Tiny C Compiler (TCC)
-        msbuild "tcclib\tcclib.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
-        msbuild "tcclib\tcclib.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        # Tiny C Compiler (TCC)
+        msbuild.exe "tcclib\tcclib.sln" $msbuild_args "/p:Platform=x64"
+        msbuild.exe "tcclib\tcclib.sln" $msbuild_args "/p:Platform=Win32"
 
     - name: Preparar y subir artefacto de compilación
       uses: actions/upload-artifact@v4
