@@ -20,76 +20,72 @@ jobs:
     - name: Instalar Lazarus IDE y Cross-Compiler
       shell: powershell
       run: |
-        echo "Descargando Lazarus IDE (64-bit) usando curl..."
         curl.exe -L -o lazarus_installer.exe "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-win64.exe/download"
-        
-        echo "Descargando Lazarus Cross-Compiler (i386-win32) usando curl..."
         curl.exe -L -o lazarus_cross_compiler_installer.exe "https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/lazarus-2.2.2-fpc-3.2.2-cross-i386-win32-win64.exe/download"
-
-        echo "Instalando Lazarus IDE silenciosamente..."
         Start-Process -FilePath ".\lazarus_installer.exe" -ArgumentList "/VERYSILENT /NORESTART /DIR=C:\lazarus" -Wait
-        
-        echo "Instalando Lazarus Cross-Compiler silenciosamente..."
         Start-Process -FilePath ".\lazarus_cross_compiler_installer.exe" -ArgumentList "/VERYSILENT /NORESTART /DIR=C:\lazarus" -Wait
-
-        echo "Agregando Lazarus al PATH..."
         echo "C:\lazarus" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-    - name: Compilar proyectos de Lazarus (.lpi, .lpr)
+    - name: Compilar proyectos de Lazarus
       shell: cmd
       working-directory: 'Cheat Engine'
       run: |
-        echo "Compilando Cheat Engine (64-bit y 32-bit)..."
         lazbuild cheatengine.lpi
         lazbuild cheatengine.lpi --cpu=i386 --os=win32
-
-        echo "Compilando speedhack (64-bit y 32-bit)..."
         lazbuild speedhack/speedhack.lpr
         lazbuild speedhack/speedhack.lpr --cpu=i386 --os=win32
-
-        echo "Compilando luaclient (64-bit y 32-bit)..."
         lazbuild luaclient/luaclient.lpr
         lazbuild luaclient/luaclient.lpr --cpu=i386 --os=win32
-
-        echo "Compilando vehdebug (64-bit y 32-bit)..."
         lazbuild vehdebug/vehdebug.lpr
         lazbuild vehdebug/vehdebug.lpr --cpu=i386 --os=win32
 
-    - name: Compilar proyectos de Visual Studio (.sln)
+    - name: Depuración - Listar archivos de proyecto
       shell: powershell
-      working-directory: '.\Cheat Engine' # En PowerShell, es buena práctica usar '.\'
+      working-directory: '.\Cheat Engine'
       run: |
-        echo "Compilando proyectos de MSBuild con PowerShell..."
-        
-        # Argumentos comunes para la mayoría de los proyectos
-        $msbuild_args = @(
-            "/p:Configuration=Release",
-            "/p:WindowsTargetPlatformVersion=10.0",
-            "/p:PlatformToolset=v143"
-        )
+        echo "Verificando la existencia de los archivos .sln..."
+        Get-ChildItem -Path . -Filter *.sln -Recurse | Select-Object FullName
 
-        # DirectX Mess (32 y 64 bits)
-        msbuild.exe "DirectXMess\DirectXMess.sln" $msbuild_args "/p:Platform=x64"
-        msbuild.exe "DirectXMess\DirectXMess.sln" $msbuild_args "/p:Platform=Win32"
+    - name: Compilar DirectXMess
+      shell: powershell
+      working-directory: '.\Cheat Engine'
+      run: |
+        msbuild.exe "DirectXMess\DirectXMess.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild.exe "DirectXMess\DirectXMess.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
-        # DotNet Data Collector (32 y 64 bits)
-        msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" $msbuild_args "/p:Platform=x64"
-        msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" $msbuild_args "/p:Platform=Win32"
+    - name: Compilar DotNetDataCollector
+      shell: powershell
+      working-directory: '.\Cheat Engine'
+      run: |
+        msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild.exe "DotNetDataCollector\dotnetdatacollector.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
-        # Mono Data Collector (32 y 64 bits)
-        msbuild.exe "MonoDataCollector\MonoDataCollector.sln" $msbuild_args "/p:Platform=x64"
-        msbuild.exe "MonoDataCollector\MonoDataCollector.sln" $msbuild_args "/p:Platform=Win32"
+    - name: Compilar MonoDataCollector
+      shell: powershell
+      working-directory: '.\Cheat Engine'
+      run: |
+        msbuild.exe "MonoDataCollector\MonoDataCollector.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild.exe "MonoDataCollector\MonoDataCollector.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
-        # Java Support (32 y 64 bits)
-        msbuild.exe "cejavahook\cejvmti.sln" $msbuild_args "/p:Platform=x64"
-        msbuild.exe "cejavahook\cejvmti.sln" $msbuild_args "/p:Platform=Win32"
+    - name: Compilar Java Support (cejvmti)
+      shell: powershell
+      working-directory: '.\Cheat Engine'
+      run: |
+        msbuild.exe "cejavahook\cejvmti.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild.exe "cejavahook\cejvmti.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
-        # Kernel Driver (DBKKernel) - Versión sin firma
-        msbuild.exe "dbk\DBKKernel.sln" $msbuild_args "/p:Platform=x64" "/p:Configuration=Release No-Sig"
-        
-        # Tiny C Compiler (TCC)
-        msbuild.exe "tcclib\tcclib.sln" $msbuild_args "/p:Platform=x64"
-        msbuild.exe "tcclib\tcclib.sln" $msbuild_args "/p:Platform=Win32"
+    - name: Compilar Kernel Driver (DBKKernel)
+      shell: powershell
+      working-directory: '.\Cheat Engine'
+      run: |
+        msbuild.exe "dbk\DBKKernel.sln" /p:Configuration="Release No-Sig" /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+
+    - name: Compilar Tiny C Compiler (tcclib)
+      shell: powershell
+      working-directory: '.\Cheat Engine'
+      run: |
+        msbuild.exe "tcclib\tcclib.sln" /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
+        msbuild.exe "tcclib\tcclib.sln" /p:Configuration=Release /p:Platform=Win32 /p:WindowsTargetPlatformVersion=10.0 /p:PlatformToolset=v143
 
     - name: Preparar y subir artefacto de compilación
       uses: actions/upload-artifact@v4
